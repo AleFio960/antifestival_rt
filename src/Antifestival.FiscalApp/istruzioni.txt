@@ -1,0 +1,136 @@
+ANTIFESTIVAL FISCAL APP - ISTRUZIONI OPERATIVE
+
+Data: 2026-09-08
+Progetto: Antifestival.FiscalApp (.NET 8)
+
+==================================================
+1) PACCHETTO LOCALE GIA PRONTO
+==================================================
+Ho generato un pacchetto publish locale pronto all'uso:
+
+- Cartella publish: publish_local_ready/
+- Archivio zip: publish_local_ready.zip
+
+Questo zip e pronto per essere caricato quando Azure torna disponibile,
+o per essere distribuito su altro server Windows/Linux con .NET runtime 8.
+
+==================================================
+2) COME RIGENERARE IL PACCHETTO IN FUTURO
+==================================================
+Apri terminale nella root del progetto e lancia:
+
+PowerShell:
+
+  $outDir = "publish_local_ready"
+  if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force }
+  dotnet publish .\Antifestival.FiscalApp.csproj -c Release -o $outDir
+
+  if (Test-Path "publish_local_ready.zip") { Remove-Item "publish_local_ready.zip" -Force }
+  Compress-Archive -Path "publish_local_ready\*" -DestinationPath "publish_local_ready.zip" -Force
+
+==================================================
+3) DEPLOY SU AZURE APP SERVICE (QUANDO TORNA ONLINE)
+==================================================
+Metodo rapido:
+
+1. Carica il contenuto di publish_local_ready.zip su Azure App Service.
+2. In App Service Configuration, imposta/controlla queste variabili:
+   - ConnectionStrings__DefaultConnection
+   - Loyverse__BaseUrl
+   - Loyverse__Token
+   - FatturaPro__BaseUrl
+   - FatturaPro__ApiKey
+   - FatturaPro__AdePassword
+   - Sync__LookbackMinutes
+   - Sync__AutoSyncIntervalSeconds
+3. Riavvia l'app.
+4. Verifica endpoint home e log applicativi.
+
+Nota: usa sempre Application Settings di Azure per segreti e stringhe critiche,
+non tenere credenziali reali dentro file versionati.
+
+==================================================
+4) DEPLOY SU SERVER ALTERNATIVO (NO AZURE)
+==================================================
+Puoi deployare anche fuori Azure. Hai 2 opzioni pratiche:
+
+A) Windows Server + IIS
+- Installa Hosting Bundle .NET 8.
+- Crea sito IIS puntando alla cartella pubblicata.
+- Configura web.config (gia presente nella publish).
+- Apri porta HTTP/HTTPS.
+- Configura variabili ambiente (stesse chiavi del punto 3).
+
+B) Linux VM + reverse proxy (Nginx)
+- Installa runtime ASP.NET Core 8.
+- Esegui app con systemd.
+- Metti Nginx davanti all'app per dominio/SSL.
+- Configura variabili ambiente e riavvia servizio.
+
+==================================================
+5) DB: RESTA IN AZURE SQL O SPOSTARLO?
+==================================================
+Situazione attuale:
+- Il DB e su Azure SQL.
+
+Scelta consigliata 2027:
+- Se il traffico cresce e vuoi meno gestione infrastruttura:
+  resta su Azure App Service + Azure SQL.
+- Se vuoi costo fisso e controllo totale:
+  valuta VM/dedicato che ospiti app + SQL Server insieme.
+
+Regola semplice:
+- Se uptime, backup gestiti, scaling automatico sono prioritari -> Azure.
+- Se budget rigido e team tecnico interno presente -> Server dedicato/VM.
+
+Attenzione latenza:
+- Se app e DB sono in cloud diversi o molto distanti, aumentano latenza e rischi.
+- Idealmente tieni app e DB nello stesso datacenter/area.
+
+==================================================
+6) MODIFICARE L'APPLICATIVO IN SICUREZZA
+==================================================
+Flusso consigliato:
+
+1. Modifica codice.
+2. Test locale:
+   dotnet run
+3. Build verifica:
+   dotnet build -c Release
+4. Publish:
+   dotnet publish -c Release -o publish_local_ready
+5. Test su ambiente staging (se disponibile).
+6. Deploy produzione.
+
+Checklist minima pre-rilascio:
+- Connection string corretta.
+- Token API validi.
+- Log attivi e monitorati.
+- Backup DB recente.
+- Piano rollback pronto (zip precedente).
+
+==================================================
+7) ROLLBACK RAPIDO
+==================================================
+Conserva sempre almeno gli ultimi 2 zip di publish:
+- publish_local_ready_YYYYMMDD.zip
+
+Se il deploy nuovo ha problemi:
+1. Ripristina zip precedente.
+2. Riavvia servizio/app.
+3. Verifica endpoint e log.
+
+==================================================
+8) NOTA DI SICUREZZA IMPORTANTE
+==================================================
+Nel file appsettings.Production.json risultano presenti segreti reali.
+Appena possibile:
+
+1. Ruota password DB/API key/token.
+2. Sposta i segreti in variabili ambiente o secret store.
+3. Lascia nel file solo valori segnaposto.
+
+Esempio placeholder:
+- "ConnectionStrings": { "DefaultConnection": "${DB_CONN_STRING}" }
+
+Fine documento.

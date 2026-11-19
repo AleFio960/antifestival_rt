@@ -1,0 +1,503 @@
+{
+  "info": {
+    "_postman_id": "3fd80178-5a8c-46db-b4ef-7a3c7db1fe0f",
+    "name": "FatturaPRO - saveDocument esempi",
+    "description": "Esempi POST x-www-form-urlencoded per saveDocument. La collection non contiene api-key: valorizzare la variabile api_key in Postman.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const now = new Date();",
+          "pm.variables.set('today', now.toISOString().slice(0, 10));",
+          "pm.variables.set('unique_id', String(now.getTime()));"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('HTTP 200', function () {",
+          "  pm.response.to.have.status(200);",
+          "});",
+          "",
+          "let parsed = null;",
+          "pm.test('Risposta XML leggibile', function () {",
+          "  parsed = xml2Json(pm.response.text());",
+          "  pm.expect(parsed).to.have.property('result');",
+          "  pm.expect(parsed.result).to.have.property('returnCode');",
+          "});",
+          "",
+          "if (parsed && parsed.result) {",
+          "  pm.environment.set('last_saveDocument_returnCode', parsed.result.returnCode);",
+          "  if (parsed.result.token) {",
+          "    pm.environment.set('last_saveDocument_token', parsed.result.token);",
+          "  }",
+          "  if (parsed.result.link) {",
+          "    pm.environment.set('last_saveDocument_link', parsed.result.link);",
+          "  }",
+          "  console.log('saveDocument returnCode:', parsed.result.returnCode);",
+          "  console.log('saveDocument description:', parsed.result.description);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "SaveDocument - scontrino",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "apiKey",
+              "value": "{{api_key}}",
+              "type": "text"
+            },
+            {
+              "key": "action",
+              "value": "SaveDocument",
+              "type": "text"
+            },
+            {
+              "key": "target",
+              "value": "C",
+              "type": "text"
+            },
+            {
+              "key": "tipo",
+              "value": "receipt",
+              "type": "text"
+            },
+            {
+              "key": "tipo_emissione",
+              "value": "DCO",
+              "type": "text"
+            },
+            {
+              "key": "ade_test",
+              "value": "SUCCESS",
+              "type": "text"
+            },
+            {
+              "key": "ade_password",
+              "value": "{{ade_password}}",
+              "type": "text"
+            },
+            {
+              "key": "customer_email",
+              "value": "cliente.demo@example.com",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[order_num]",
+              "value": "SCONTRINO-{{unique_id}}",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[order_date]",
+              "value": "{{today}}",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[sezionale]",
+              "value": "API",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[paid]",
+              "value": "true",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[add_customer]",
+              "value": "false",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_first_name]",
+              "value": "Mario",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_last_name]",
+              "value": "Rossi",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_address]",
+              "value": "Via Roma 1",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_postcode]",
+              "value": "20100",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_city]",
+              "value": "Milano",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_state]",
+              "value": "MI",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_country]",
+              "value": "IT",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_email]",
+              "value": "cliente.demo@example.com",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][row_type]",
+              "value": "line_item",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][sku]",
+              "value": "DEMO-SCO-001",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][product_name]",
+              "value": "Prodotto demo scontrino",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][item_quantity]",
+              "value": "1",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][item_subtotal]",
+              "value": "10.00",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][item_subtotal_tax]",
+              "value": "2.20",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][item_total]",
+              "value": "10.00",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][item_total_tax]",
+              "value": "2.20",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][item_tax_class]",
+              "value": "22",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][category]",
+              "value": "prodotti",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}",
+          "host": [
+            "{{base_url}}"
+          ]
+        },
+        "description": "Crea uno scontrino/corrispettivo. Usa order_num dinamico per evitare duplicati. ade_test=SUCCESS e ade_password vuota finche' non viene valorizzata in ambiente Postman."
+      }
+    },
+    {
+      "name": "SaveDocument - fattura con incasso",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "apiKey",
+              "value": "{{api_key}}",
+              "type": "text"
+            },
+            {
+              "key": "action",
+              "value": "SaveDocument",
+              "type": "text"
+            },
+            {
+              "key": "target",
+              "value": "F",
+              "type": "text"
+            },
+            {
+              "key": "tipo",
+              "value": "invoice",
+              "type": "text"
+            },
+            {
+              "key": "tipo_pagamento",
+              "value": "MP01",
+              "type": "text"
+            },
+            {
+              "key": "customer_email",
+              "value": "amministrazione@example.com",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[order_num]",
+              "value": "FATTURA-{{unique_id}}",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[order_date]",
+              "value": "{{today}}",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[data]",
+              "value": "{{today}}",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[sezionale]",
+              "value": "API",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[paid]",
+              "value": "true",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[add_customer]",
+              "value": "false",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_company]",
+              "value": "Cliente Demo SRL",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_first_name]",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_last_name]",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[vat_number]",
+              "value": "12345678903",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[tax_code]",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_code]",
+              "value": "0000000",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_pec]",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_address]",
+              "value": "Via Roma 10",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_postcode]",
+              "value": "20100",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_city]",
+              "value": "Milano",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_state]",
+              "value": "MI",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_country]",
+              "value": "IT",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_phone]",
+              "value": "0212345678",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[billing_email]",
+              "value": "amministrazione@example.com",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][row_type]",
+              "value": "line_item",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][sku]",
+              "value": "DEMO-FT-001",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][product_name]",
+              "value": "Consulenza demo",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][item_quantity]",
+              "value": "1",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][um]",
+              "value": "Nr",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][item_subtotal]",
+              "value": "100.00",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][item_subtotal_tax]",
+              "value": "22.00",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][item_total]",
+              "value": "100.00",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][item_total_tax]",
+              "value": "22.00",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][item_tax_class]",
+              "value": "22",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][0][category]",
+              "value": "servizi",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][1][row_type]",
+              "value": "shipping",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][1][item_quantity]",
+              "value": "1",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][1][item_subtotal]",
+              "value": "5.00",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][1][item_subtotal_tax]",
+              "value": "1.10",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][1][item_total]",
+              "value": "5.00",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][1][item_total_tax]",
+              "value": "1.10",
+              "type": "text"
+            },
+            {
+              "key": "dati_fattura[document_rows][1][item_tax_class]",
+              "value": "22",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}",
+          "host": [
+            "{{base_url}}"
+          ]
+        },
+        "description": "Crea una fattura e, non passando dati_fattura[unpaid], lascia attivo l'incasso automatico. tipo_pagamento=MP01 usa contanti/cassa."
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "api_key",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ade_password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "today",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "unique_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

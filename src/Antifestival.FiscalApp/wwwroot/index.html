@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Antifestival – Corrispettivi Fiscali</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    * { font-family: 'Inter', system-ui, sans-serif; }
+    body { background: #eef0f4; min-height: 100vh; }
+
+    .app-nav {
+      background: linear-gradient(135deg, #0f1117 0%, #1a1d27 100%);
+      padding: .7rem 1rem;
+      box-shadow: 0 2px 14px rgba(0,0,0,.4);
+    }
+    .app-nav .brand { color: #f1f5f9; font-size: 1rem; font-weight: 700; }
+    .app-nav .brand .dot { color: #4ade80; margin: 0 .25rem; }
+
+    .btn-fp {
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      border: none; color: #fff; font-weight: 700; font-size: .9rem;
+      padding: .5rem 1.2rem; border-radius: 8px;
+      box-shadow: 0 4px 14px rgba(21,128,61,.4);
+      transition: transform .18s, box-shadow .18s;
+    }
+    .btn-fp:hover  { transform: translateY(-2px); box-shadow: 0 7px 20px rgba(21,128,61,.5); color: #fff; }
+    .btn-fp:active { transform: translateY(0); }
+    .btn-fp:disabled { opacity: .5; transform: none !important; box-shadow: none; }
+    .btn-fp .cnt {
+      background: rgba(255,255,255,.22); font-size: .68em;
+      padding: .15em .55em; border-radius: 20px; margin-left: .45em;
+    }
+
+    .stat-c { border-radius: 10px; border: none; overflow: hidden; }
+    .stat-c::before { content: ""; display: block; height: 3px; background: var(--ac, #94a3b8); }
+    .stat-num { font-size: 1.6rem; font-weight: 700; line-height: 1.15; }
+    .stat-lbl { font-size: .7rem; color: #6b7280; margin-top: .2rem; }
+    @keyframes pulse-num { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+    .pulsing { animation: pulse-num 1.7s ease-in-out infinite; }
+
+    .table th {
+      font-size: .65rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .06em; color: #9ca3af; background: #f9fafb; white-space: nowrap;
+    }
+    .table td { vertical-align: middle; }
+    .receipt-num { font-family: "Courier New", monospace; font-size: .78em; color: #374151; }
+    .empty-state { color: #9ca3af; padding: 3rem 1rem; font-style: italic; }
+    .empty-state i { font-size: 2rem; display: block; margin-bottom: .5rem; opacity: .5; }
+
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.5);
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
+    }
+    .overlay-box {
+      background: #fff; border-radius: 14px; padding: 2rem 2.5rem;
+      text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,.3); min-width: 220px;
+    }
+
+    .page-link { color: #1d4ed8; }
+    .page-item.active .page-link { background-color: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+
+    @media (max-width: 575px) {
+      .stat-num { font-size: 1.3rem; }
+      .stat-c .card-body { padding: .6rem .7rem !important; }
+      .container-xxl { padding-left: .5rem; padding-right: .5rem; }
+      .table td, .table th { padding: .3rem .35rem; font-size: .76rem; }
+      .btn-fp { font-size: .85rem; padding: .55rem 1rem; }
+
+      /* INVIA TUTTO: riga intera su mobile */
+      #btnSend, #btnResendDemoRange { width: 100%; }
+
+      /* Impostazioni contanti: impila verticalmente */
+      .cash-interval-row { flex-direction: column !important; align-items: flex-start !important; gap: .5rem !important; }
+      .cash-interval-row input[type=number] { width: 110px !important; }
+
+      /* Nascondi colonna "Tipo Pag." su xs per dare respiro alla tabella */
+      .table th:nth-child(3), .table td:nth-child(3) { display: none; }
+
+      /* Touch target minimo per bottoni azione nella tabella */
+      .table td .btn, .table td button, .table td a.btn {
+        min-height: 38px; min-width: 38px;
+        display: inline-flex; align-items: center; justify-content: center;
+      }
+
+      /* Navbar: nascondi orario su schermi molto stretti */
+      #lastUpdate { display: none; }
+    }
+    @media (max-width: 360px) {
+      .stat-num { font-size: 1.1rem; }
+      .receipt-num { font-size: .7em; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="overlay d-none" id="overlay">
+  <div class="overlay-box">
+    <div class="spinner-border text-primary mb-3" style="width:2.5rem;height:2.5rem;"></div>
+    <div class="fw-semibold text-secondary" id="overlayMsg">Operazione in corso…</div>
+  </div>
+</div>
+
+<nav class="app-nav d-flex align-items-center justify-content-between">
+  <div class="brand">
+    <i class="bi bi-receipt-cutoff me-2"></i>Antifestival<span class="dot">●</span>Corrispettivi
+  </div>
+  <span id="lastUpdate" style="color:#6b7280;font-size:.72rem;"></span>
+</nav>
+
+<div class="container-xxl py-3">
+
+  <!-- ═══ PANNELLO RE-INVIO DEMO ══════════════════════════════════════════ -->
+  <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;overflow:hidden;border-top:3px solid #d97706">
+    <div class="card-header px-3 py-2 border-bottom d-flex align-items-center gap-2" style="background:#fffbeb">
+      <i class="bi bi-arrow-repeat" style="color:#d97706"></i>
+      <span class="fw-semibold" style="font-size:.88rem;color:#92400e">Re-invio Corrispettivi DEMO → Produzione</span>
+      <span class="badge ms-auto d-none" id="demoInProgressBadge" style="background:#d97706;font-size:.65em">IN CORSO</span>
+    </div>
+    <div class="card-body p-3">
+      <div class="d-flex flex-wrap align-items-end gap-2 mb-3">
+        <div>
+          <label class="form-label mb-1" style="font-size:.78rem;color:#6b7280">Dal</label>
+          <input type="date" id="demoStart" class="form-control form-control-sm" value="2026-07-17">
+        </div>
+        <div>
+          <label class="form-label mb-1" style="font-size:.78rem;color:#6b7280">Al</label>
+          <input type="date" id="demoEnd" class="form-control form-control-sm">
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" onclick="loadDemoStats()" style="margin-top:auto" title="Aggiorna">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col-6 col-sm-3">
+          <div class="card border-0 h-100" style="background:#fef3c7;border-radius:8px">
+            <div class="card-body p-2 text-center">
+              <div class="fw-bold" id="demo-da-reinviare" style="font-size:1.4rem;color:#92400e">–</div>
+              <div style="font-size:.68rem;color:#b45309">Da reinviare</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-sm-3">
+          <div class="card border-0 h-100" style="background:#dbeafe;border-radius:8px">
+            <div class="card-body p-2 text-center">
+              <div class="fw-bold" id="demo-in-elab" style="font-size:1.4rem;color:#1d4ed8">–</div>
+              <div style="font-size:.68rem;color:#1e40af">In elaborazione</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-sm-3">
+          <div class="card border-0 h-100" style="background:#dcfce7;border-radius:8px">
+            <div class="card-body p-2 text-center">
+              <div class="fw-bold" id="demo-reinviati" style="font-size:1.4rem;color:#15803d">–</div>
+              <div style="font-size:.68rem;color:#166534">Re-inviati ✓</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-sm-3">
+          <div class="card border-0 h-100" style="background:#fee2e2;border-radius:8px">
+            <div class="card-body p-2 text-center">
+              <div class="fw-bold" id="demo-errori" style="font-size:1.4rem;color:#dc2626">–</div>
+              <div style="font-size:.68rem;color:#b91c1c">Errori</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mb-3 d-none" id="demoProgressWrap">
+        <div class="progress" style="height:8px;border-radius:4px">
+          <div class="progress-bar bg-success" id="demoProgressBar" style="width:0%;transition:width .5s"></div>
+        </div>
+        <div class="d-flex justify-content-between mt-1" style="font-size:.72rem;color:#6b7280">
+          <span id="demoProgressLabel">0 / 0</span>
+          <span id="demoProgressPct">0%</span>
+        </div>
+      </div>
+      <button id="btnResendDemoRange" class="btn-fp"
+        style="background:linear-gradient(135deg,#d97706,#b45309);box-shadow:0 4px 14px rgba(180,83,9,.4)"
+        onclick="resendDemoRange()">
+        <i class="bi bi-arrow-repeat me-1"></i>REINVIA DEMO NEL RANGE
+      </button>
+    </div>
+  </div>
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+
+  <!-- Controls -->
+  <div class="mb-3">
+  <div class="d-flex align-items-end gap-2 mb-0">
+    <div>
+      <label class="form-label fw-semibold text-secondary mb-1" style="font-size:.78rem">Data</label>
+      <input type="date" id="selectedDate" class="form-control form-control-sm shadow-sm" style="min-width:140px;">
+    </div>
+    <button id="btnSync" class="btn btn-outline-primary btn-sm" onclick="syncLoyverse()" style="margin-top:auto">
+      <i class="bi bi-arrow-repeat me-1"></i>Sync
+    </button>
+    <button class="btn btn-light btn-sm border shadow-sm ms-auto" onclick="loadAll()" style="margin-top:auto" title="Aggiorna">
+      <i class="bi bi-arrow-clockwise"></i>
+    </button>
+  </div>
+  <!-- Su mobile questo bottone si espande sotto la riga date+sync -->
+  <div class="d-flex flex-wrap gap-2 mt-2">
+  <button id="btnSend" class="btn-fp" onclick="sendDay()">
+    <i class="bi bi-send-check-fill me-1"></i>INVIA TUTTO A ADE
+    <span class="cnt d-none" id="pendingBadge"></span>
+  </button>
+  </div>
+  </div><!-- /Controls -->
+
+  <!-- Impostazione intervallo contanti -->
+  <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;overflow:hidden">
+    <div class="card-header bg-white px-3 py-2 border-bottom d-flex align-items-center gap-2">
+      <i class="bi bi-gear-fill text-secondary"></i>
+      <span class="fw-semibold text-secondary" style="font-size:.88rem">Impostazioni invio contanti</span>
+    </div>
+    <div class="card-body p-3">
+      <div class="d-flex align-items-center gap-3 flex-wrap cash-interval-row">
+        <label for="cashIntervalInput" class="fw-semibold text-secondary mb-0" style="font-size:.85rem">
+          Invia pagamenti contanti uno ogni:
+        </label>
+        <input type="number" id="cashIntervalInput" min="1" max="20" value="1"
+               class="form-control form-control-sm shadow-sm" style="width:80px;"
+               onkeydown="if(event.key==='Enter') saveCashInterval()">
+        <button class="btn btn-sm btn-primary" onclick="saveCashInterval()">
+          <i class="bi bi-floppy me-1"></i>Salva
+        </button>
+      </div>
+      <p class="mt-2 mb-0 fw-bold" id="cashIntervalSummary" style="font-size:.88rem;color:#374151">
+        Hai impostato attualmente invio di 1 pagamento contante ogni 1
+      </p>
+    </div>
+  </div>
+
+  <!-- Stats riga 1: panoramica scontrini -->
+  <div class="row g-2 mb-2">
+    <div class="col-6 col-sm-3">
+      <div class="card stat-c shadow-sm h-100" style="--ac:#94a3b8">
+        <div class="card-body p-3">
+          <div class="stat-num text-secondary" id="stat-total">–</div>
+          <div class="stat-lbl">Scontrini</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-3">
+      <div class="card stat-c shadow-sm h-100" style="--ac:#3b82f6">
+        <div class="card-body p-3">
+          <div class="stat-num text-primary" id="stat-electronic">–</div>
+          <div class="stat-lbl">Elettronici</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-3">
+      <div class="card stat-c shadow-sm h-100" style="--ac:#94a3b8">
+        <div class="card-body p-3">
+          <div class="stat-num text-secondary" id="stat-cash">–</div>
+          <div class="stat-lbl">Solo contanti</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-3">
+      <div class="card stat-c shadow-sm h-100" style="--ac:#d1d5db">
+        <div class="card-body p-3">
+          <div class="stat-num text-secondary" id="stat-nonprog">–</div>
+          <div class="stat-lbl">Non programmati</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats riga 2: stato fiscale -->
+  <div class="row g-2 mb-3">
+    <div class="col-4">
+      <div class="card stat-c shadow-sm h-100" style="--ac:#22c55e">
+        <div class="card-body p-3">
+          <div class="stat-num text-success" id="stat-sent">–</div>
+          <div class="stat-lbl">Inviati AdE ✓</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="card stat-c shadow-sm h-100" style="--ac:#f59e0b">
+        <div class="card-body p-3">
+          <div class="stat-num" id="stat-pending" style="color:#d97706">–</div>
+          <div class="stat-lbl">Programmati</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="card stat-c shadow-sm h-100" style="--ac:#ef4444">
+        <div class="card-body p-3">
+          <div class="stat-num text-danger" id="stat-errors">–</div>
+          <div class="stat-lbl">Errori</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabella scontrini -->
+  <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;overflow:hidden">
+    <div class="card-header bg-white px-3 py-2 border-bottom d-flex align-items-center gap-2">
+      <i class="bi bi-receipt text-secondary"></i>
+      <span class="fw-semibold text-secondary" style="font-size:.88rem">Scontrini</span>
+      <span class="badge bg-secondary rounded-pill ms-1" id="receiptCount" style="font-size:.62em">0</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>N° Scontrino</th>
+            <th class="d-none d-sm-table-cell">Data/Ora</th>
+            <th>Tipo Pag.</th>
+            <th class="text-end">Totale €</th>
+            <th>Stato</th>
+            <th class="text-center">Azione</th>
+          </tr>
+        </thead>
+        <tbody id="receipts-body">
+          <tr><td colspan="6" class="text-center empty-state">
+            <i class="bi bi-inbox"></i>Seleziona una data e clicca Aggiorna
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="paginationWrap" style="display:none;align-items:center;justify-content:space-between;gap:.5rem"
+         class="card-footer bg-white border-top px-3 py-2">
+      <small class="text-secondary" id="pageInfo"></small>
+      <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+    </div>
+  </div>
+
+  <!-- Filtro orario – solo per i 3 pannelli monetari sotto -->
+  <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;overflow:hidden;border-top:3px solid #6366f1">
+    <div class="card-header px-3 py-2 border-bottom d-flex align-items-center gap-2" style="background:#f5f3ff">
+      <i class="bi bi-funnel" style="color:#6366f1"></i>
+      <span class="fw-semibold" style="font-size:.88rem;color:#4f46e5">Filtro orario pannelli monetari</span>
+      <span class="badge d-none ms-1" id="rangeFilterBadge" style="font-size:.65em;background:#6366f1">Attivo</span>
+      <span class="ms-auto" style="font-size:.7rem;color:#7c3aed"><i class="bi bi-arrow-down me-1"></i>agisce sui 3 pannelli in basso</span>
+    </div>
+    <div class="card-body p-3">
+      <div class="d-flex flex-wrap align-items-end gap-2">
+        <div>
+          <label class="form-label mb-1" style="font-size:.78rem;color:#6b7280">Dal</label>
+          <input type="datetime-local" id="filterStart" class="form-control form-control-sm">
+        </div>
+        <div>
+          <label class="form-label mb-1" style="font-size:.78rem;color:#6b7280">Al</label>
+          <input type="datetime-local" id="filterEnd" class="form-control form-control-sm">
+        </div>
+        <button class="btn btn-sm" onclick="applyRangeFilter()" style="margin-top:auto;background:#6366f1;color:#fff;border:none">
+          <i class="bi bi-funnel-fill me-1"></i>Applica
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="clearRangeFilter()" style="margin-top:auto" title="Rimuovi filtro">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Totali fiscali giornalieri -->
+  <div class="row g-2 mb-3">
+    <div class="col-12 col-sm-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius:10px;background:#f3f4f6;border-left:4px solid #374151!important">
+        <div class="card-body p-3">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <i class="bi bi-phone-fill" style="color:#374151"></i>
+            <span class="fw-bold" style="font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#374151">Sumup</span>
+          </div>
+          <div class="fw-bold" id="stat-samup" style="font-size:1.45rem;color:#111827;line-height:1.1">–</div>
+          <div class="mt-1" style="font-size:.75rem;color:#6b7280">Pagamenti Sumup</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius:10px;background:#f0fdf4;border-left:4px solid #22c55e!important">
+        <div class="card-body p-3">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <span class="fw-bold text-success" style="font-size:.78rem;text-transform:uppercase;letter-spacing:.05em">Inviato AdE</span>
+          </div>
+          <div class="fw-bold" id="stat-sent-gross" style="font-size:1.45rem;color:#15803d;line-height:1.1">–</div>
+          <div class="mt-1" style="font-size:.75rem;color:#6b7280">
+            Imponibile&nbsp;<strong id="stat-sent-net" class="text-dark">–</strong>
+            &nbsp;&middot;&nbsp;IVA&nbsp;<strong id="stat-sent-tax" class="text-dark">–</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius:10px;background:#fefce8;border-left:4px solid #f59e0b!important">
+        <div class="card-body p-3">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <i class="bi bi-hourglass-split" style="color:#d97706"></i>
+            <span class="fw-bold" style="font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#d97706">Non inviato</span>
+          </div>
+          <div class="fw-bold" id="stat-notsent-gross" style="font-size:1.45rem;color:#b45309;line-height:1.1">–</div>
+          <div class="mt-1" style="font-size:.75rem;color:#6b7280">IVA inclusa</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1200" id="toastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+'use strict';
+
+const PAGE_SIZE = 20;
+let _allReceipts = [];
+let _currentPage = 1;
+
+const esc = s => String(s ?? '')
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+const fmt = n => n != null
+  ? Number(n).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  : '–';
+
+const fmtDt = s => {
+  if (!s) return '–';
+  try {
+    return new Date(s).toLocaleString('it-IT', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  } catch { return String(s); }
+};
+
+function toast(msg, type = 'success') {
+  const cls = { success: 'text-bg-success', danger: 'text-bg-danger',
+    warning: 'text-bg-warning text-dark', info: 'text-bg-info text-dark' }[type] || 'text-bg-secondary';
+  const id = 'toast-' + Date.now();
+  document.getElementById('toastContainer').insertAdjacentHTML('beforeend',
+    `<div id="${id}" class="toast align-items-center border-0 ${cls}" role="alert">
+       <div class="d-flex">
+         <div class="toast-body fw-medium">${esc(msg)}</div>
+         <button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+       </div>
+     </div>`);
+  const el = document.getElementById(id);
+  new bootstrap.Toast(el, { delay: 7000 }).show();
+  el.addEventListener('hidden.bs.toast', () => el.remove());
+}
+
+async function apiFetch(method, url) {
+  const r = await fetch(url, { method, cache: 'no-store' });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(`HTTP ${r.status}: ${t.substring(0, 200)}`);
+  }
+  return r.json();
+}
+
+function setBusy(v, msg = 'Operazione in corso…') {
+  document.getElementById('overlayMsg').textContent = msg;
+  document.getElementById('overlay').classList.toggle('d-none', !v);
+  document.getElementById('btnSync').disabled = v;
+  document.getElementById('btnSend').disabled = v;
+  document.getElementById('btnResendDemoRange').disabled = v;
+}
+
+const getDate = () => document.getElementById('selectedDate').value;
+
+function renderStats(s) {
+  document.getElementById('stat-total').textContent      = s.total      ?? '–';
+  document.getElementById('stat-electronic').textContent  = s.electronic ?? '–';
+  document.getElementById('stat-cash').textContent       = s.cashOnly   ?? '–';
+  document.getElementById('stat-sent').textContent       = s.inviato    ?? '–';
+  document.getElementById('stat-pending').textContent    = s.daInviare  ?? '–';
+  document.getElementById('stat-errors').textContent     = s.errore     ?? '–';
+
+  const n = s.daInviare ?? 0;
+  const badge = document.getElementById('pendingBadge');
+  const statEl = document.getElementById('stat-pending');
+  badge.classList.toggle('d-none', n === 0);
+  if (n > 0) { badge.textContent = n; statEl.classList.add('pulsing'); }
+  else statEl.classList.remove('pulsing');
+}
+
+function renderPanels(s) {
+  const sentGross  = s.totalSentGross    ?? 0;
+  const sentTax    = s.totalSentTax      ?? 0;
+  const sentNet    = sentGross - sentTax;
+  const notSent    = s.totalNotSentGross ?? 0;
+  document.getElementById('stat-sent-gross').textContent  = '\u20AC\u00A0' + fmt(sentGross);
+  document.getElementById('stat-sent-net').textContent    = '\u20AC\u00A0' + fmt(sentNet);
+  document.getElementById('stat-sent-tax').textContent    = '\u20AC\u00A0' + fmt(sentTax);
+  document.getElementById('stat-notsent-gross').textContent = '\u20AC\u00A0' + fmt(notSent);
+  const samup = s.totalSamup ?? 0;
+  document.getElementById('stat-samup').textContent = '\u20AC\u00A0' + fmt(samup);
+}
+
+function statusBadge(r) {
+  const qs = r.queueStatus, fs = r.fiscalStatus;
+  if (qs === 'INVIATO' || fs === 'INVIATO')
+    return '<span class="badge text-bg-success"><i class="bi bi-check-circle-fill me-1"></i>Inviato</span>';
+  if (qs === 'ERRORE' || fs === 'ERRORE')
+    return '<span class="badge text-bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Errore</span>';
+  if (qs === 'DA_INVIARE')
+    return '<span class="badge text-bg-warning text-dark"><i class="bi bi-clock-fill me-1"></i>Programmato</span>';
+  if (fs === 'NON_PROGRAMMATO')
+    return '<span class="badge bg-light text-secondary border" style="font-size:.7em">Non prog.</span>';
+  return '<span class="badge bg-light text-secondary border">–</span>';
+}
+
+function payBadge(r) {
+  const sub = r.paymentTypeNames
+    ? `<div style="font-size:.63rem;color:#9ca3af;margin-top:1px">${esc(r.paymentTypeNames)}</div>` : '';
+  if (r.paymentElectronic > 0 && r.paymentCash > 0)
+    return `<span class="badge text-bg-info text-dark"><i class="bi bi-shuffle me-1"></i>Misto</span>${sub}`;
+  if (r.paymentElectronic > 0)
+    return `<span class="badge text-bg-primary"><i class="bi bi-credit-card-fill me-1"></i>Elec.</span>${sub}`;
+  return `<span class="badge text-bg-secondary"><i class="bi bi-cash-stack me-1"></i>Cont.</span>${sub}`;
+}
+
+// Icona pagamento compatta – visibile SOLO su mobile (colonna Tipo Pag. nascosta su xs)
+function payIcon(r) {
+  if (r.paymentElectronic > 0 && r.paymentCash > 0)
+    return '<span class="d-inline d-sm-none badge text-bg-info text-dark me-1" style="font-size:.65em" title="Misto"><i class="bi bi-shuffle"></i></span>';
+  if (r.paymentElectronic > 0)
+    return '<span class="d-inline d-sm-none badge text-bg-primary me-1" style="font-size:.65em" title="Elettronico"><i class="bi bi-credit-card-fill"></i></span>';
+  return '<span class="d-inline d-sm-none badge text-bg-secondary me-1" style="font-size:.65em" title="Contanti"><i class="bi bi-cash-stack"></i></span>';
+}
+
+function renderPage() {
+  const tbody = document.getElementById('receipts-body');
+  const total = _allReceipts.length;
+  document.getElementById('receiptCount').textContent = total;
+
+  if (!total) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center empty-state">
+      <i class="bi bi-inbox"></i>Nessuno scontrino per questa data.</td></tr>`;
+    document.getElementById('paginationWrap').style.display = 'none';
+    return;
+  }
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (_currentPage > totalPages) _currentPage = totalPages;
+  const start = (_currentPage - 1) * PAGE_SIZE;
+  const slice = _allReceipts.slice(start, start + PAGE_SIZE);
+
+  tbody.innerHTML = slice.map(r => {
+    const sent = r.queueStatus === 'INVIATO' || r.fiscalStatus === 'INVIATO';
+    const errNote = r.lastError
+      ? `<div class="text-danger" style="font-size:.63rem;margin-top:2px">
+           <i class="bi bi-exclamation-triangle me-1"></i>${esc(r.lastError.substring(0, 60))}
+         </div>` : '';
+    const btn = sent
+      ? (r.fatturaproUrl
+          ? `<a href="${esc(r.fatturaproUrl)}" target="_blank"
+               class="btn btn-sm btn-outline-success py-0 px-2"><i class="bi bi-file-earmark-check"></i></a>`
+          : `<button class="btn btn-sm btn-outline-success py-0 px-2" disabled><i class="bi bi-check-lg"></i></button>`)
+      : `<button class="btn btn-sm py-0 px-2 text-white"
+           style="background:#16a34a;border:none;border-radius:6px"
+           onclick="sendReceipt('${esc(r.receiptNumber)}')"><i class="bi bi-send-fill"></i></button>`;
+
+    return `<tr>
+      <td><span class="receipt-num">${esc(r.receiptNumber)}</span></td>
+      <td class="d-none d-sm-table-cell text-nowrap" style="font-size:.78rem">${fmtDt(r.receiptDate)}</td>
+      <td>${payBadge(r)}</td>
+      <td class="text-end fw-semibold" style="font-size:.85rem;white-space:nowrap">${fmt(r.totalMoney)}</td>
+      <td>${payIcon(r)}${statusBadge(r)}${errNote}</td>
+      <td class="text-center">${btn}</td>
+    </tr>`;
+  }).join('');
+
+  const wrap = document.getElementById('paginationWrap');
+  if (totalPages <= 1) {
+    wrap.style.display = 'none';
+  } else {
+    wrap.style.display = 'flex';
+    document.getElementById('pageInfo').textContent =
+      `${start + 1}–${Math.min(start + PAGE_SIZE, total)} / ${total}`;
+    renderPagination(totalPages);
+  }
+}
+
+function renderPagination(totalPages) {
+  const p = _currentPage;
+  let html = `<li class="page-item${p === 1 ? ' disabled' : ''}">
+    <a class="page-link" href="#" onclick="goPage(${p - 1});return false">&#8249;</a></li>`;
+
+  let from = Math.max(1, p - 2), to = Math.min(totalPages, p + 2);
+  if (to - from < 4) { if (from === 1) to = Math.min(totalPages, 5); else from = Math.max(1, to - 4); }
+  if (from > 1) html += `<li class="page-item disabled"><span class="page-link">&#8230;</span></li>`;
+  for (let i = from; i <= to; i++)
+    html += `<li class="page-item${i === p ? ' active' : ''}">
+      <a class="page-link" href="#" onclick="goPage(${i});return false">${i}</a></li>`;
+  if (to < totalPages) html += `<li class="page-item disabled"><span class="page-link">&#8230;</span></li>`;
+  html += `<li class="page-item${p === totalPages ? ' disabled' : ''}">
+    <a class="page-link" href="#" onclick="goPage(${p + 1});return false">&#8250;</a></li>`;
+
+  document.getElementById('pagination').innerHTML = html;
+}
+
+function goPage(p) {
+  const totalPages = Math.ceil(_allReceipts.length / PAGE_SIZE);
+  if (p < 1 || p > totalPages) return;
+  _currentPage = p;
+  renderPage();
+  document.querySelector('.table-responsive')
+    ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function renderReceipts(rows) {
+  _allReceipts = rows;
+  _currentPage = 1;
+  const np = _allReceipts.filter(r =>
+    r.fiscalStatus === 'NON_PROGRAMMATO' && r.queueStatus !== 'INVIATO'
+  ).length;
+  document.getElementById('stat-nonprog').textContent = np;
+  renderPage();
+}
+
+async function loadAll() {
+  const d = getDate();
+  if (!d) return;
+  const start = document.getElementById('filterStart').value;
+  const end   = document.getElementById('filterEnd').value;
+  const useRange = start && end;
+  // Pulisce subito i risultati vecchi
+  _allReceipts = [];
+  renderPage();
+  setBusy(true, 'Caricamento\u2026');
+  try {
+    // Griglia: sempre per data
+    const rUrl = `/admin/receipts?date=${d}`;
+    // Conteggi (righe 1+2): sempre per data
+    const sUrl = `/admin/stats?date=${d}`;
+    // Pannelli monetari: range se attivo, altrimenti data
+    const pUrl = useRange
+      ? `/admin/stats?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`
+      : sUrl;
+    const [receipts, dayStats, panelStats] = await Promise.all([
+      apiFetch('GET', rUrl),
+      apiFetch('GET', sUrl),
+      useRange ? apiFetch('GET', pUrl) : Promise.resolve(null)
+    ]);
+    renderReceipts(receipts);
+    renderStats(dayStats);
+    renderPanels(useRange ? panelStats : dayStats);
+    document.getElementById('lastUpdate').textContent =
+      new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  } catch (e) {
+    toast('Errore: ' + e.message, 'danger');
+    renderReceipts([]);
+  } finally {
+    setBusy(false);
+  }
+}
+
+function applyRangeFilter() {
+  const start = document.getElementById('filterStart').value;
+  const end   = document.getElementById('filterEnd').value;
+  if (!start || !end) { toast('Inserisci data e ora di inizio e fine', 'warning'); return; }
+  if (start >= end)   { toast('La data di inizio deve essere precedente alla fine', 'warning'); return; }
+  document.getElementById('rangeFilterBadge').classList.remove('d-none');
+  loadAll();
+}
+
+function clearRangeFilter() {
+  document.getElementById('filterStart').value = '';
+  document.getElementById('filterEnd').value   = '';
+  document.getElementById('rangeFilterBadge').classList.add('d-none');
+  loadAll();
+}
+
+async function syncLoyverse() {
+  setBusy(true, 'Sync Loyverse…');
+  try {
+    await apiFetch('POST', '/admin/sync/loyverse');
+    toast('Sync avviato – aggiorna tra qualche secondo', 'info');
+    // Attende 4s poi ricarica i dati
+    setTimeout(async () => {
+      await loadAll();
+    }, 4000);
+  } catch (e) {
+    toast('Errore sync: ' + e.message, 'danger');
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function sendDay() {
+  const d = getDate();
+  if (!d) { toast('Seleziona una data', 'warning'); return; }
+  if (!confirm('Inviare TUTTI i corrispettivi (inclusi non programmati) a AdE per il ' + d + '?\n\nL\'operazione e\' irreversibile.')) return;
+  setBusy(true, 'Invio a AdE…');
+  try {
+    const r = await apiFetch('POST', `/admin/fiscal/force-send-all?date=${d}`);
+    const n = r.processed;
+    toast(
+      n > 0 ? `&#10003; Inviati ${n} corrispettiv${n === 1 ? 'o' : 'i'} a AdE` : 'Nessun elemento da elaborare',
+      n > 0 ? 'success' : 'info'
+    );
+    await loadAll();
+  } catch (e) {
+    toast('Errore invio: ' + e.message, 'danger');
+    setBusy(false);
+  }
+}
+
+// ── Re-invio Demo panel ─────────────────────────────────────────────────────
+let _demoPolling = null;
+
+async function loadDemoStats() {
+  const start = document.getElementById('demoStart').value;
+  const end   = document.getElementById('demoEnd').value;
+  if (!start || !end) return;
+  try {
+    const r   = await apiFetch('GET', `/admin/fiscal/demo-range-stats?start=${start}&end=${end}`);
+    const daR = r.daReinviare    ?? 0;
+    const inE = r.inElaborazione ?? 0;
+    const rei = r.reinviati      ?? 0;
+    const err = r.errori         ?? 0;
+    document.getElementById('demo-da-reinviare').textContent = daR;
+    document.getElementById('demo-in-elab').textContent      = inE;
+    document.getElementById('demo-reinviati').textContent    = rei;
+    document.getElementById('demo-errori').textContent       = err;
+
+    const total = daR + inE + rei + err;
+    const done  = rei + err;
+    const wrap  = document.getElementById('demoProgressWrap');
+    if (total > 0 && (inE > 0 || done > 0)) {
+      wrap.classList.remove('d-none');
+      const pct = Math.round(done / total * 100);
+      document.getElementById('demoProgressBar').style.width = pct + '%';
+      document.getElementById('demoProgressLabel').textContent = `${done} / ${total}`;
+      document.getElementById('demoProgressPct').textContent   = pct + '%';
+    } else {
+      wrap.classList.add('d-none');
+    }
+
+    const badge = document.getElementById('demoInProgressBadge');
+    if (inE > 0) {
+      badge.classList.remove('d-none');
+      if (!_demoPolling) _demoPolling = setInterval(loadDemoStats, 5000);
+    } else {
+      badge.classList.add('d-none');
+      if (_demoPolling) { clearInterval(_demoPolling); _demoPolling = null; }
+    }
+  } catch (_) { /* silent */ }
+}
+
+async function resendDemoRange() {
+  const start = document.getElementById('demoStart').value;
+  const end   = document.getElementById('demoEnd').value;
+  if (!start || !end) { toast('Inserisci data inizio e fine', 'warning'); return; }
+  if (start > end)    { toast('La data inizio deve essere precedente alla fine', 'warning'); return; }
+  if (!confirm(
+    `Re-inviare definitivamente a AdE tutti i corrispettivi già inviati in DEMO\ndal ${start} al ${end}?\n\nOperazione irreversibile.`
+  )) return;
+  document.getElementById('btnResendDemoRange').disabled = true;
+  try {
+    const resp = await fetch(`/admin/fiscal/resend-demo-range?start=${start}&end=${end}`,
+      { method: 'POST', cache: 'no-store' });
+    if (!resp.ok) { const t = await resp.text(); throw new Error(`HTTP ${resp.status}: ${t.substring(0, 200)}`); }
+    toast(`Re-invio avviato in background dal ${start} al ${end} – statistiche aggiornate ogni 5s`, 'info');
+    if (_demoPolling) clearInterval(_demoPolling);
+    _demoPolling = setInterval(loadDemoStats, 5000);
+    await loadDemoStats();
+  } catch (e) {
+    toast('Errore: ' + e.message, 'danger');
+    document.getElementById('btnResendDemoRange').disabled = false;
+  }
+}
+
+async function sendReceipt(num) {
+  setBusy(true, `Invio ${num}…`);
+  try {
+    const r = await apiFetch('POST', `/admin/fiscal/send/${encodeURIComponent(num)}`);
+    const ok = r.returnCode === '0';
+    toast(
+      ok ? `&#10003; ${num} inviato` : `&#10007; ${num}: ${r.description || 'code=' + r.returnCode}`,
+      ok ? 'success' : 'danger'
+    );
+    await loadAll();
+  } catch (e) {
+    toast('Errore: ' + e.message, 'danger');
+    setBusy(false);
+  }
+}
+
+// ── Impostazione intervallo contanti ────────────────────────────────────────
+
+function updateCashIntervalSummary(n) {
+  document.getElementById('cashIntervalSummary').textContent =
+    `Hai impostato attualmente invio di 1 pagamento contante ogni ${n}`;
+}
+
+async function loadCashInterval() {
+  try {
+    const r = await apiFetch('GET', '/admin/settings/cash-interval');
+    document.getElementById('cashIntervalInput').value = r.interval;
+    updateCashIntervalSummary(r.interval);
+  } catch (_) { /* silent – non blocca il caricamento */ }
+}
+
+async function saveCashInterval() {
+  const val = parseInt(document.getElementById('cashIntervalInput').value, 10);
+  if (isNaN(val) || val < 1 || val > 20) {
+    toast('Il valore deve essere compreso tra 1 e 20', 'warning');
+    return;
+  }
+  try {
+    const r = await fetch('/admin/settings/cash-interval', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ interval: val })
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${r.status}`);
+    }
+    const data = await r.json();
+    updateCashIntervalSummary(data.interval);
+    toast('&#10003; Impostazione salvata', 'success');
+  } catch (e) {
+    toast('Errore: ' + e.message, 'danger');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const now = new Date();
+  const localDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  document.getElementById('selectedDate').value = localDate;
+  document.getElementById('demoEnd').value = localDate;
+  document.getElementById('selectedDate').addEventListener('change', loadAll);
+  loadCashInterval();
+  loadDemoStats();
+  loadAll();
+});
+</script>
+</body>
+</html>
