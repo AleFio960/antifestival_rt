@@ -1,7 +1,7 @@
 ANTIFESTIVAL FISCAL APP - ISTRUZIONI OPERATIVE
 
 Data: 2026-09-08
-Progetto: Antifestival.FiscalApp (.NET 8)
+Progetto: Antifestival.FiscalApp (.NET 10)
 
 ==================================================
 1) PACCHETTO LOCALE GIA PRONTO
@@ -12,7 +12,7 @@ Ho generato un pacchetto publish locale pronto all'uso:
 - Archivio zip: publish_local_ready.zip
 
 Questo zip e pronto per essere caricato quando Azure torna disponibile,
-o per essere distribuito su altro server Windows/Linux con .NET runtime 8.
+o per essere distribuito su altro server Windows/Linux con .NET runtime 10.
 
 ==================================================
 2) COME RIGENERARE IL PACCHETTO IN FUTURO
@@ -55,14 +55,14 @@ non tenere credenziali reali dentro file versionati.
 Puoi deployare anche fuori Azure. Hai 2 opzioni pratiche:
 
 A) Windows Server + IIS
-- Installa Hosting Bundle .NET 8.
+- Installa Hosting Bundle .NET 10.
 - Crea sito IIS puntando alla cartella pubblicata.
 - Configura web.config (gia presente nella publish).
 - Apri porta HTTP/HTTPS.
 - Configura variabili ambiente (stesse chiavi del punto 3).
 
 B) Linux VM + reverse proxy (Nginx)
-- Installa runtime ASP.NET Core 8.
+- Installa runtime ASP.NET Core 10.
 - Esegui app con systemd.
 - Metti Nginx davanti all'app per dominio/SSL.
 - Configura variabili ambiente e riavvia servizio.
