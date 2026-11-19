@@ -107,6 +107,7 @@
 <nav class="app-nav d-flex align-items-center justify-content-between">
   <div class="brand">
     <i class="bi bi-receipt-cutoff me-2"></i>Antifestival<span class="dot">●</span>Corrispettivi
+    <span id="envBadge" class="badge ms-2 d-none" style="font-size:.65em;vertical-align:middle"></span>
   </div>
   <span id="lastUpdate" style="color:#6b7280;font-size:.72rem;"></span>
 </nav>
@@ -825,7 +826,19 @@ async function saveCashInterval() {
   }
 }
 
+async function loadEnvironment() {
+  try {
+    const env = await apiFetch('GET', '/admin/environment');
+    const badge = document.getElementById('envBadge');
+    badge.textContent = env.isProduction ? 'PRODUZIONE' : env.name.toUpperCase();
+    badge.style.background = env.isProduction ? '#dc2626' : '#d97706';
+    badge.classList.remove('d-none');
+    document.title = (env.isProduction ? '' : `[${env.name.toUpperCase()}] `) + document.title;
+  } catch { /* badge non critico */ }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  loadEnvironment();
   const now = new Date();
   const localDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   document.getElementById('selectedDate').value = localDate;

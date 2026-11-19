@@ -28,6 +28,8 @@ builder.Services.AddHostedService<AutoSyncBackgroundService>();
 
 var app = builder.Build();
 
+Console.WriteLine($"[INFO] Ambiente: {app.Environment.EnvironmentName} | FatturaPro: {app.Configuration["FatturaPro:BaseUrl"]}");
+
 // Ensure app_settings table exists and restore persisted values
 try
 {

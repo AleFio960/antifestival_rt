@@ -28,6 +28,30 @@ PowerShell:
   if (Test-Path "publish_local_ready.zip") { Remove-Item "publish_local_ready.zip" -Force }
   Compress-Archive -Path "publish_local_ready\*" -DestinationPath "publish_local_ready.zip" -Force
 
+--------------------------------------------------
+2b) AMBIENTI: STAGING vs PRODUZIONE
+--------------------------------------------------
+L'ambiente NON e scritto nel codice: lo stesso build va bene per entrambi.
+Si decide da dove gira l'app:
+
+- Locale (Properties/launchSettings.json):
+    dotnet run                                -> Staging (default, sicuro)
+    dotnet run --launch-profile Production    -> Produzione
+    dotnet run --environment Staging          -> override al volo
+
+- IIS (l'ambiente viene scritto nel web.config del pacchetto):
+    dotnet publish -c Release -o publish_staging -p:EnvironmentName=Staging
+    dotnet publish -c Release -o publish_prod    -p:EnvironmentName=Production
+
+- Azure App Service: Configuration -> ASPNETCORE_ENVIRONMENT = Production
+  (oppure Staging sullo slot/app di test).
+
+Senza nessuna impostazione l'app parte in PRODUZIONE (default ASP.NET Core).
+
+Verifica: all'avvio la console stampa "[INFO] Ambiente: ...", la dashboard
+mostra un badge (rosso = PRODUZIONE, arancio = STAGING) e
+GET /admin/environment restituisce l'ambiente attivo.
+
 ==================================================
 3) DEPLOY SU AZURE APP SERVICE (QUANDO TORNA ONLINE)
 ==================================================

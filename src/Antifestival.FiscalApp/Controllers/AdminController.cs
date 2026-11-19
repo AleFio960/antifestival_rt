@@ -40,6 +40,10 @@ public class AdminController : ControllerBase
     [HttpGet("health")]
     public IActionResult Health() => Ok(new { ok = true });
 
+    [HttpGet("environment")]
+    public IActionResult Environment([FromServices] IWebHostEnvironment env) =>
+        Ok(new { name = env.EnvironmentName, isProduction = env.IsProduction() });
+
     // ── Loyverse sync ────────────────────────────────────────────────────────
 
     [HttpPost("sync/loyverse")]
